@@ -1,3 +1,5 @@
+from flask_cors import CORS
+CORS(app, origins=["https://elaborate-profiterole-a2ede4.netlify.app", "*"])
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
