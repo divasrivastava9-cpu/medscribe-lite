@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedScribe Lite - V2 Fixed</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-3">
+<div class="max-w-2xl mx-auto">
+<div class="bg-yellow-100 border-l-4 border-yellow-500 p-2 mb-3 text-sm">⚠️ Hindi bolo toh saaf bolo: "bukhar hai"</div>
+<h1 class="text-2xl font-bold text-blue-700 text-center">MedScribe Lite</h1>
+<p class="text-center text-xs text-gray-600 mb-3">Suno. Samjho. Likho. | Diva, FGIET</p>
+
+<div class="bg-white rounded-xl shadow p-4">
+<div class="flex gap-2 mb-3">
+<select id="lang" class="border rounded px-2 py-2 text-sm">
+<option value="hi-IN">Hindi</option>
+<option value="en-IN">English</option>
+</select>
+<span id="status" class="text-xs text-gray-500 ml-auto mt-2">Ready - Bolna shuru karo</span>
+</div>
+
+<button id="micBtn" class="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-bold">🎙️ Start Bolna</button>
+
+<div class="mt-3">
+<p class="font-semibold text-sm">Live Sun Raha Hai:</p>
+<textarea id="transcript" class="w-full border rounded p-2 min-h-[90px] bg-gray-50 mt-1 text-sm" placeholder="Yaha tumhari awaaz text me ayegi... Ya niche type bhi kar sakti ho backup ke liye">Yaha tumhari awaaz ayegi...</textarea>
+<p class="text-[10px] text-gray-400">*Mic na chale toh yaha type karo: "bukhar khansi"</p>
+</div>
+
+<div class="mt-3">
+<p class="font-semibold text-sm">Prescription (Auto):</p>
+<div id="prescription" class="border rounded p-2 min-h-[90px] bg-blue-50 mt-1 text-sm">Bukhar, Khansi, Pet dard bolo toh dawai ayegi...</div>
+</div>
+
+<div class="grid grid-cols-2 gap-2 mt-3">
+<button id="genBtn" class="bg-green-600 text-white py-2 rounded text-sm">Generate PDF</button>
+<button id="clearBtn" class="bg-gray-200 py-2 rounded text-sm">Clear</button>
+</div>
+</div>
+</div>
+
+<script>
+let recognition, isListening=false;
+const micBtn=document.getElementById('micBtn');
+const statusEl=document.getElementById('status');
+const transcriptEl=document.getElementById('transcript');
+const prescriptionEl=document.getElementById('prescription');
+
+function getPrescription(text){
+ text=text.toLowerCase();
+ let p="";
+ if(text.includes('bukhar')||text.includes('fever')||text.includes('बुखार')) p+="• Tab Paracetamol 500mg TDS x 3 days - Bukhar ke liye<br>";
+ if(text.includes('khansi')||text.includes('cough')||text.includes('खांसी')) p+="• Syrup Ascoril 10ml BD x 5 days - Khansi ke liye<br>";
+ if(text.includes('pet')||text.includes('dard')||text.includes('पेट')) p+="• Tab Pantoprazole 40mg OD x 5 days - Pet dard<br>";
+ if(text.includes('sardi')||text.includes('cold')||text.includes('जुकाम')) p+="• Tab Cetirizine 10mg HS x 3 days<br>";
+ if(text.includes('sir')||text.includes('sar')) p+="• Tab Paracetamol + Rest<br>";
+ if(p=="") p="Patient stable - Rest & Hydration advised. Monitor kare.";
+ return p+"<br><small class='text-gray-500'>Dr. Advice: Paani zyada piye, aaram kare.</small>";
+}
+
+function updatePres(text){
+ prescriptionEl.innerHTML=getPrescription(text);
+}
+
+transcriptEl.addEventListener('input', (e)=>{ updatePres(e.target.value); });
+
+micBtn.onclick=()=>{
+ const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Speech){ alert("Chrome me kholo, is browser me support nahi"); return; }
+ if(isListening){ recognition.stop(); return; }
+ recognition=new Speech();
+ recognition.lang=document.getElementById('lang').value;
+ recognition.interimResults=false;
+ recognition.continuous=false;
+ recognition.maxAlternatives=1;
+
+ recognition.onstart=()=>{ isListening=true; micBtn.textContent="🔴 Sun Raha Hu... Tap to Stop"; statusEl.textContent="🔴 Sun raha hu... bolo ab"; micBtn.className="w-full bg-red-600 text-white py-4 rounded-xl text-lg font-bold"; };
+ recognition.onend=()=>{ isListening=false; micBtn.textContent="🎙️ Start Bolna"; statusEl.textContent="Ho gaya! Fir bolne ke liye dabao"; micBtn.className="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-bold"; };
+ recognition.onerror=(e)=>{ statusEl.textContent="Error: "+e.error+" - Fir se try karo"; isListening=false; micBtn.textContent="🎙️ Retry Bolna"; micBtn.className="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-bold"; };
+ recognition.onresult=(e)=>{
+   const text=e.results[0][0].transcript;
+   transcriptEl.value=text;
+   updatePres(text);
+   statusEl.textContent="Text mil gaya: "+text;
+ };
+ recognition.start();
+};
+
+document.getElementById('genBtn').onclick=()=>{
+  const text=transcriptEl.value;
+  if(text.length<3){ alert("Pehle bolo ya type karo!"); return; }
+  window.print();
+};
+document.getElementById('clearBtn').onclick=()=>{ transcriptEl.value=""; prescriptionEl.innerHTML="Bukhar, Khansi..."; statusEl.textContent="Ready"; };
+</script>
+</body>
+</html>
